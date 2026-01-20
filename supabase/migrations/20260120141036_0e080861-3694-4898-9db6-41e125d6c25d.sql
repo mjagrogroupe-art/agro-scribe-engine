@@ -262,6 +262,15 @@ CREATE POLICY "Users can view their own profiles"
 ON public.profiles FOR SELECT
 USING (user_id = auth.uid());
 
+CREATE POLICY "Users can create their own profile"
+ON public.profiles FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "System can create profiles during signup"
+ON public.profiles FOR INSERT
+WITH CHECK (true)
+AS SECURITY DEFINER;
+
 CREATE POLICY "Users can update their own profiles"
 ON public.profiles FOR UPDATE
 USING (user_id = auth.uid());
