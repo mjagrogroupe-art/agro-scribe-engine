@@ -1,42 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Leaf } from 'lucide-react';
 
-const signInSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-const signUpSchema = signInSchema.extend({
-  fullName: z.string().min(2, 'Full name is required'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
-
-type SignInValues = z.infer<typeof signInSchema>;
-type SignUpValues = z.infer<typeof signUpSchema>;
-
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
 
@@ -46,27 +24,20 @@ export default function Auth() {
     }
   }, [user, navigate]);
 
-  const signInForm = useForm<SignInValues>({
-    resolver: zodResolver(signInSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: 'Validation error',
+        description: 'Please enter email and password',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-  const signUpForm = useForm<SignUpValues>({
-    resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      confirmPassword: '',
-      fullName: '',
-    },
-  });
-
-  const handleSignIn = async (values: SignInValues) => {
     setIsLoading(true);
-    const { error } = await signIn(values.email, values.password);
+    const { error } = await signIn(email, password);
     setIsLoading(false);
 
     if (error) {
@@ -80,9 +51,47 @@ export default function Auth() {
     }
   };
 
-  const handleSignUp = async (values: SignUpValues) => {
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!fullName || fullName.length < 2) {
+      toast({
+        title: 'Validation error',
+        description: 'Full name is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!email) {
+      toast({
+        title: 'Validation error',
+        description: 'Please enter a valid email',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      toast({
+        title: 'Validation error',
+        description: 'Password must be at least 6 characters',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: 'Validation error',
+        description: "Passwords don't match",
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
-    const { error } = await signUp(values.email, values.password, values.fullName);
+    const { error } = await signUp(email, password, fullName);
     setIsLoading(false);
 
     if (error) {
@@ -104,6 +113,18 @@ export default function Auth() {
     }
   };
 
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFullName('');
+  };
+
+  const switchMode = (toSignUp: boolean) => {
+    resetForm();
+    setIsSignUp(toSignUp);
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-md">
@@ -120,101 +141,85 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           {isSignUp ? (
-            <Form {...signUpForm}>
-              <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
-                <FormField
-                  control={signUpForm.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  autoComplete="name"
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="john@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Account
-                </Button>
-              </form>
-            </Form>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Account
+              </Button>
+            </form>
           ) : (
-            <Form {...signInForm}>
-              <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
-                <FormField
-                  control={signInForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="john@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signInEmail">Email</Label>
+                <Input
+                  id="signInEmail"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                 />
-                <FormField
-                  control={signInForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signInPassword">Password</Label>
+                <Input
+                  id="signInPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign In
-                </Button>
-              </form>
-            </Form>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign In
+              </Button>
+            </form>
           )}
 
           <div className="mt-6 text-center text-sm">
@@ -223,7 +228,7 @@ export default function Auth() {
                 Already have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => setIsSignUp(false)}
+                  onClick={() => switchMode(false)}
                   className="font-medium text-primary hover:underline"
                 >
                   Sign in
@@ -234,7 +239,7 @@ export default function Auth() {
                 Don't have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => setIsSignUp(true)}
+                  onClick={() => switchMode(true)}
                   className="font-medium text-primary hover:underline"
                 >
                   Create one
