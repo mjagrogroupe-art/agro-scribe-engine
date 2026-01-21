@@ -97,12 +97,14 @@ Brand tone: ${BRAND_CONTEXT.tone}
 AVOID: ${BRAND_CONTEXT.avoid}
 
 Generate exactly 4 hooks (max 2 seconds each when spoken):
-1. Curiosity Hook - sparks interest with mystery
-2. Authority Hook - establishes credibility immediately  
-3. Pain-Point Hook - addresses a common problem
-4. Visual Hook - describes striking imagery
+1. curiosity - sparks interest with mystery
+2. authority - establishes credibility immediately  
+3. pain_point - addresses a common problem
+4. visual - describes striking imagery
 
-Return JSON array with: hook_type, hook_text, retention_score (0-100)`;
+CRITICAL: hook_type must be EXACTLY one of: "curiosity", "authority", "pain_point", "visual" (lowercase, no spaces)
+
+Return JSON array with: hook_type (use exact values above), hook_text, retention_score (0-100)`;
     } else if (type === "scripts") {
       prompt = `Generate platform-specific video scripts for ${BRAND_CONTEXT.name}.
 Platforms: ${platforms.join(", ")}
