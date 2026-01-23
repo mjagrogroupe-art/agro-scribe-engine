@@ -9,11 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MARKETS, CONTENT_TYPES, LANGUAGES } from '@/lib/constants';
-import { Sparkles, FileText, Eye, MessageSquare, CheckCircle, Download, Loader2 } from 'lucide-react';
+import { Sparkles, FileText, Eye, MessageSquare, CheckCircle, Download, Loader2, ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { ImageGenerator } from '@/components/projects/ImageGenerator';
+import { PlatformTarget } from '@/types/database';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -179,7 +181,12 @@ export default function ProjectDetail() {
             )}
           </TabsContent>
 
-          <TabsContent value="visual"><Card><CardContent className="py-8 text-center text-muted-foreground">Visual guidance will be generated with scripts.</CardContent></Card></TabsContent>
+          <TabsContent value="visual">
+            <ImageGenerator 
+              projectId={project.id} 
+              platforms={project.platforms as PlatformTarget[]} 
+            />
+          </TabsContent>
           <TabsContent value="captions"><Card><CardContent className="py-8 text-center text-muted-foreground">Generate captions after approving scripts.</CardContent></Card></TabsContent>
           <TabsContent value="compliance">
             <Card>

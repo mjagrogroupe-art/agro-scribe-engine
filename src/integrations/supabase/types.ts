@@ -194,6 +194,47 @@ export type Database = {
           },
         ]
       }
+      generated_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_type: string
+          image_url: string
+          is_selected: boolean
+          platform: string
+          project_id: string
+          prompt: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_type?: string
+          image_url: string
+          is_selected?: boolean
+          platform: string
+          project_id: string
+          prompt: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_type?: string
+          image_url?: string
+          is_selected?: boolean
+          platform?: string
+          project_id?: string
+          prompt?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_images_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_scripts: {
         Row: {
           brand_anchor: string

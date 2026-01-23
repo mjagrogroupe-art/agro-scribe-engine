@@ -129,6 +129,17 @@ export interface ComplianceCheck {
   checked_at: string;
 }
 
+export interface GeneratedImage {
+  id: string;
+  project_id: string;
+  platform: string;
+  image_url: string;
+  prompt: string;
+  image_type: string;
+  is_selected: boolean;
+  created_at: string;
+}
+
 export interface ApprovalHistory {
   id: string;
   project_id: string;
