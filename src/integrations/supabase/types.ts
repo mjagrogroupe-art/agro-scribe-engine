@@ -452,6 +452,98 @@ export type Database = {
           },
         ]
       }
+      storyboard_frames: {
+        Row: {
+          audio_cue: string | null
+          camera_angle: string | null
+          created_at: string
+          frame_number: number
+          id: string
+          scene_description: string
+          storyboard_id: string
+          text_overlay: string | null
+          timestamp_end: number
+          timestamp_start: number
+          visual_direction: string
+        }
+        Insert: {
+          audio_cue?: string | null
+          camera_angle?: string | null
+          created_at?: string
+          frame_number: number
+          id?: string
+          scene_description: string
+          storyboard_id: string
+          text_overlay?: string | null
+          timestamp_end: number
+          timestamp_start: number
+          visual_direction: string
+        }
+        Update: {
+          audio_cue?: string | null
+          camera_angle?: string | null
+          created_at?: string
+          frame_number?: number
+          id?: string
+          scene_description?: string
+          storyboard_id?: string
+          text_overlay?: string | null
+          timestamp_end?: number
+          timestamp_start?: number
+          visual_direction?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_frames_storyboard_id_fkey"
+            columns: ["storyboard_id"]
+            isOneToOne: false
+            referencedRelation: "storyboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      storyboards: {
+        Row: {
+          created_at: string
+          id: string
+          is_selected: boolean | null
+          platform: string
+          project_id: string
+          script_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_selected?: boolean | null
+          platform: string
+          project_id: string
+          script_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_selected?: boolean | null
+          platform?: string
+          project_id?: string
+          script_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboards_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storyboards_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "generated_scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string

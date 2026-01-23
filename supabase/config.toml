@@ -1,5 +1,8 @@
 project_id = "cbwzdgooyjjznmmkftcb"
 
+[functions.generate-storyboard]
+verify_jwt = false
+
 [functions.generate-content]
 verify_jwt = false
 
