@@ -9,13 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MARKETS, CONTENT_TYPES, LANGUAGES } from '@/lib/constants';
-import { Sparkles, FileText, Eye, MessageSquare, CheckCircle, Download, Loader2, Film } from 'lucide-react';
+import { Sparkles, FileText, Eye, MessageSquare, CheckCircle, Download, Loader2, Film, Video } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { ImageGenerator } from '@/components/projects/ImageGenerator';
 import { StoryboardGenerator } from '@/components/projects/StoryboardGenerator';
+import VideoGenerator from '@/components/projects/VideoGenerator';
 import { PlatformTarget } from '@/types/database';
 
 export default function ProjectDetail() {
@@ -127,6 +128,7 @@ export default function ProjectDetail() {
             <TabsTrigger value="scripts"><FileText className="mr-2 h-4 w-4" />Scripts</TabsTrigger>
             <TabsTrigger value="storyboard"><Film className="mr-2 h-4 w-4" />Storyboard</TabsTrigger>
             <TabsTrigger value="visual"><Eye className="mr-2 h-4 w-4" />Visual</TabsTrigger>
+            <TabsTrigger value="video"><Video className="mr-2 h-4 w-4" />Video</TabsTrigger>
             <TabsTrigger value="captions"><MessageSquare className="mr-2 h-4 w-4" />Captions</TabsTrigger>
             <TabsTrigger value="compliance"><CheckCircle className="mr-2 h-4 w-4" />QA</TabsTrigger>
           </TabsList>
@@ -196,6 +198,13 @@ export default function ProjectDetail() {
               platforms={project.platforms as PlatformTarget[]} 
             />
           </TabsContent>
+          <TabsContent value="video">
+            <VideoGenerator 
+              projectId={project.id} 
+              platforms={project.platforms as PlatformTarget[]} 
+            />
+          </TabsContent>
+
           <TabsContent value="captions"><Card><CardContent className="py-8 text-center text-muted-foreground">Generate captions after approving scripts.</CardContent></Card></TabsContent>
           <TabsContent value="compliance">
             <Card>
