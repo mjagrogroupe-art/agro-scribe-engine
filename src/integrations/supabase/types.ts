@@ -285,6 +285,53 @@ export type Database = {
           },
         ]
       }
+      generated_videos: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          is_selected: boolean
+          platform: string
+          project_id: string
+          prompt: string
+          status: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          is_selected?: boolean
+          platform: string
+          project_id: string
+          prompt: string
+          status?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          is_selected?: boolean
+          platform?: string
+          project_id?: string
+          prompt?: string
+          status?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_videos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           brand_id: string
