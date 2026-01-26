@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Video, Loader2, Trash2, Play, Clock, AlertCircle } from "lucide-react";
+import { Video, Loader2, Trash2, Clock, AlertCircle, Download } from "lucide-react";
 import { useGeneratedVideos, useGenerateVideo, useDeleteVideo } from "@/hooks/useGeneratedVideos";
 import { PlatformTarget } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface VideoGeneratorProps {
   projectId: string;
@@ -45,6 +46,26 @@ export default function VideoGenerator({ projectId, platforms }: VideoGeneratorP
       prompt: prompt.trim(),
       durationSeconds: duration,
     });
+  };
+
+  const handleDownload = async (videoUrl: string, platform: string) => {
+    try {
+      toast.info("Starting download...");
+      const response = await fetch(videoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `video-${platform}-${Date.now()}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Video downloaded successfully!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download video");
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -195,14 +216,27 @@ export default function VideoGenerator({ projectId, platforms }: VideoGeneratorP
                       )}
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteVideo.mutate(video.id)}
-                      disabled={deleteVideo.isPending}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {video.status === "completed" && video.video_url && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownload(video.video_url!, video.platform)}
+                          title="Download video"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteVideo.mutate(video.id)}
+                        disabled={deleteVideo.isPending}
+                        title="Delete video"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
