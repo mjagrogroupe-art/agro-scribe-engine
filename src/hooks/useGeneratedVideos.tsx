@@ -16,7 +16,7 @@ export interface GeneratedVideo {
 }
 
 export function useGeneratedVideos(projectId: string | undefined) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["generated-videos", projectId],
     queryFn: async () => {
       if (!projectId) return [];
@@ -32,6 +32,38 @@ export function useGeneratedVideos(projectId: string | undefined) {
     },
     enabled: !!projectId,
   });
+
+  // Check if any videos are still processing
+  const hasProcessingVideos = query.data?.some(
+    (video) => video.status === "pending" || video.status === "generating" || video.status === "processing"
+  );
+
+  // Poll every 5 seconds when there are processing videos
+  const pollQuery = useQuery({
+    queryKey: ["generated-videos-poll", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      
+      const { data, error } = await supabase
+        .from("generated_videos")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as GeneratedVideo[];
+    },
+    enabled: !!projectId && hasProcessingVideos,
+    refetchInterval: hasProcessingVideos ? 5000 : false,
+  });
+
+  // Return the poll query data when polling, otherwise the main query
+  return {
+    ...query,
+    data: pollQuery.data ?? query.data,
+    isLoading: query.isLoading,
+    isRefetching: query.isRefetching || pollQuery.isRefetching,
+  };
 }
 
 export function useGenerateVideo() {
