@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,20 +23,6 @@ const PLATFORM_DIMENSIONS: Record<string, { width: number; height: number }> = {
   facebook_post: { width: 1200, height: 630 },
 };
 
-// Validation schemas
-const UUIDSchema = z.string().uuid("Invalid project ID format");
-const PlatformSchema = z.enum(["tiktok", "instagram_reels", "facebook_reels", "youtube_shorts", "instagram_post", "facebook_post"]);
-const ImageTypeSchema = z.enum(["thumbnail", "social_post", "story_cover"]);
-
-const RequestSchema = z.object({
-  projectId: UUIDSchema,
-  platform: PlatformSchema,
-  imageType: ImageTypeSchema.optional().default("social_post"),
-  customPrompt: z.string().optional(),
-});
-
-type GenerateImageRequest = z.infer<typeof RequestSchema>;
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -55,11 +40,10 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Parse and validate request body
-    let requestBody: GenerateImageRequest;
+    // Parse request body
+    let requestBody;
     try {
-      const body = await req.json();
-      requestBody = RequestSchema.parse(body);
+      requestBody = await req.json();
     } catch (error) {
       console.error("Validation error:", error);
       return new Response(
@@ -68,7 +52,14 @@ serve(async (req) => {
       );
     }
 
-    const { projectId, platform, imageType, customPrompt } = requestBody;
+    const { projectId, platform, imageType = "social_post", customPrompt } = requestBody;
+
+    if (!projectId || !platform) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: projectId, platform" }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
     // Fetch project details
     const { data: project, error: projectError } = await supabase
@@ -122,7 +113,7 @@ Ultra high resolution, photorealistic, commercial quality.`;
         "Content-Type": "application/json" 
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "user", content: basePrompt }
         ],
