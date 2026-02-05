@@ -12,6 +12,7 @@ import NewProject from "./pages/NewProject";
 import ProjectDetail from "./pages/ProjectDetail";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import CampaignManager from "./pages/CampaignManager";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ function AppRoutes() {
       <Route path="/projects/new" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
       <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/campaigns" element={<ProtectedRoute><CampaignManager /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

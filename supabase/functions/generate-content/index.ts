@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,25 +12,6 @@ const BRAND_CONTEXT = {
   tone: "Premium, calm, credible",
   avoid: "Hype, medical claims, influencer slang, greetings in hooks",
 };
-
-// Validation schemas
-const ContentTypeEnum = z.enum(["hooks", "scripts"]);
-const UUIDSchema = z.string().uuid("Invalid project ID format");
-
-const RequestSchema = z.object({
-  projectId: UUIDSchema,
-  type: ContentTypeEnum,
-});
-
-type GenerateContentRequest = z.infer<typeof RequestSchema>;
-
-// Generic error response mapping
-function getGenericErrorMessage(error: unknown): string {
-  if (error instanceof z.ZodError) {
-    return "Invalid request parameters";
-  }
-  return "Content generation failed";
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -50,11 +30,10 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Parse and validate request body
-    let requestBody: GenerateContentRequest;
+    // Parse request body
+    let requestBody;
     try {
-      const body = await req.json();
-      requestBody = RequestSchema.parse(body);
+      requestBody = await req.json();
     } catch (error) {
       console.error("Validation error:", error);
       return new Response(
@@ -64,6 +43,13 @@ serve(async (req) => {
     }
 
     const { projectId, type } = requestBody;
+    
+    if (!projectId || !type || !["hooks", "scripts"].includes(type)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request parameters" }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
     
     // Fetch project details
     const { data: project, error: projectError } = await supabase
@@ -126,7 +112,7 @@ Return JSON array with: platform, hook_section, value_delivery, brand_anchor, so
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: "You are an expert content strategist for premium food brands. Return only valid JSON." },
           { role: "user", content: prompt }
@@ -194,8 +180,7 @@ Return JSON array with: platform, hook_section, value_delivery, brand_anchor, so
 
     return new Response(JSON.stringify({ success: true, count: generated.length }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
-    const genericError = getGenericErrorMessage(err);
     console.error("Unhandled error:", err);
-    return new Response(JSON.stringify({ error: genericError }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "Content generation failed" }), { status: 500, headers: corsHeaders });
   }
 });

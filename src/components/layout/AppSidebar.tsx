@@ -20,6 +20,7 @@ import {
   Settings,
   LogOut,
   Leaf,
+  Megaphone,
 } from 'lucide-react';
 
 const mainNavItems = [
@@ -32,6 +33,11 @@ const mainNavItems = [
     title: 'New Project',
     url: '/projects/new',
     icon: FolderPlus,
+  },
+  {
+    title: 'Campaigns',
+    url: '/campaigns',
+    icon: Megaphone,
   },
 ];
 

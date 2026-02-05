@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,10 +12,6 @@ const BRAND_CONTEXT = {
   tone: "Premium, calm, credible",
   visualStyle: "Clean, minimalist, high-end food photography aesthetic",
 };
-
-const RequestSchema = z.object({
-  scriptId: z.string().uuid("Invalid script ID format"),
-});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -38,11 +33,10 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Parse and validate request body
+    // Parse request body
     let requestBody;
     try {
-      const body = await req.json();
-      requestBody = RequestSchema.parse(body);
+      requestBody = await req.json();
     } catch (error) {
       console.error("Validation error:", error);
       return new Response(
@@ -52,6 +46,13 @@ serve(async (req) => {
     }
 
     const { scriptId } = requestBody;
+
+    if (!scriptId) {
+      return new Response(
+        JSON.stringify({ error: "Missing required field: scriptId" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Fetch the script
     const { data: script, error: scriptError } = await supabase
@@ -115,7 +116,7 @@ Return ONLY a valid JSON array of frame objects.`;
         "Content-Type": "application/json" 
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { 
             role: "system", 
