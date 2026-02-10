@@ -6,16 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Platform dimensions for video generation
-const PLATFORM_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  'tiktok': { width: 1080, height: 1920 },
-  'instagram_reels': { width: 1080, height: 1920 },
-  'facebook_reels': { width: 1080, height: 1920 },
-  'youtube_shorts': { width: 1080, height: 1920 },
-};
-
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -39,7 +30,6 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -82,27 +72,20 @@ serve(async (req) => {
 
     console.log(`Starting video generation for project ${projectId}, video ${pendingVideo.id}`);
 
-    const dimensions = PLATFORM_DIMENSIONS[platform] || { width: 1080, height: 1920 };
+    const aspectRatio = ['tiktok', 'instagram_reels', 'facebook_reels', 'youtube_shorts'].includes(platform) ? '9:16' : '16:9';
 
-    // Call Google Veo 3 API via Gemini
-    // Note: Veo 3 is accessed through the Generative Language API
+    // Use the correct Gemini API endpoint for video generation
+    const MODEL_ID = 'veo-3.0-generate-preview';
     const veoResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-generate-preview:predictLongRunning?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateVideos?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          instances: [
-            {
-              prompt: prompt,
-            }
-          ],
-          parameters: {
-            aspectRatio: dimensions.width > dimensions.height ? '16:9' : '9:16',
-            durationSeconds: durationSeconds,
-            personGeneration: 'allow_adult',
+          generateVideoConfig: {
+            prompt: prompt,
+            aspectRatio: aspectRatio,
+            numberOfVideos: 1,
           }
         }),
       }
@@ -112,7 +95,6 @@ serve(async (req) => {
       const errorText = await veoResponse.text();
       console.error('Veo API error:', veoResponse.status, errorText);
 
-      // Update video status to failed
       await supabase
         .from('generated_videos')
         .update({ status: 'failed' })
@@ -124,10 +106,9 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
       if (veoResponse.status === 402 || veoResponse.status === 403) {
         return new Response(
-          JSON.stringify({ error: 'API quota exceeded or billing issue. Please check your Gemini API settings.' }),
+          JSON.stringify({ error: 'API quota exceeded or billing issue.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -141,68 +122,97 @@ serve(async (req) => {
     const veoResult = await veoResponse.json();
     console.log('Veo API response:', JSON.stringify(veoResult, null, 2));
 
-    // For long-running operations, we get an operation name
-    // The video URL will be in the operation result
-    let videoUrl = null;
-    
+    // generateVideos returns a long-running operation
     if (veoResult.name) {
-      // This is a long-running operation, we need to poll for completion
-      // For now, store the operation name and update status
+      // Poll for completion (up to 5 minutes)
+      let operationResult = veoResult;
+      const maxAttempts = 60;
+      
+      for (let i = 0; i < maxAttempts; i++) {
+        if (operationResult.done) break;
+        
+        // Wait 5 seconds between polls
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        const pollResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/${operationResult.name}?key=${GEMINI_API_KEY}`
+        );
+        
+        if (!pollResponse.ok) {
+          console.error('Poll error:', pollResponse.status);
+          continue;
+        }
+        
+        operationResult = await pollResponse.json();
+        console.log(`Poll attempt ${i + 1}:`, operationResult.done ? 'done' : 'still processing');
+      }
+
+      if (operationResult.done && operationResult.response) {
+        const videos = operationResult.response.generatedVideos;
+        if (videos && videos.length > 0) {
+          const videoData = videos[0].video;
+          let videoUrl = null;
+
+          if (videoData?.uri) {
+            videoUrl = videoData.uri;
+          }
+
+          if (videoUrl) {
+            const { data: updatedVideo } = await supabase
+              .from('generated_videos')
+              .update({ video_url: videoUrl, status: 'completed' })
+              .eq('id', pendingVideo.id)
+              .select()
+              .single();
+
+            return new Response(
+              JSON.stringify({ success: true, video: updatedVideo }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+      }
+
+      // If we got here, operation didn't complete or no video URL
+      if (!operationResult.done) {
+        await supabase
+          .from('generated_videos')
+          .update({ status: 'processing', video_url: operationResult.name })
+          .eq('id', pendingVideo.id);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            video: { ...pendingVideo, status: 'processing' },
+            message: 'Video generation started. It will be ready in a few minutes.',
+            operationName: operationResult.name,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Operation done but no video
+      const errorMsg = operationResult.error?.message || 'No video generated';
+      console.error('Operation completed with error:', errorMsg);
       await supabase
         .from('generated_videos')
-        .update({ 
-          status: 'processing',
-          video_url: veoResult.name // Store operation name temporarily
-        })
+        .update({ status: 'failed' })
         .eq('id', pendingVideo.id);
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          video: { ...pendingVideo, status: 'processing' },
-          message: 'Video generation started. It will be ready in a few minutes.',
-          operationName: veoResult.name
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: errorMsg }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // If we get an immediate result with video
-    if (veoResult.predictions && veoResult.predictions[0]) {
-      const prediction = veoResult.predictions[0];
-      videoUrl = prediction.videoUri || prediction.video?.uri;
-    }
-
-    if (videoUrl) {
-      // Update video record with URL
-      const { data: updatedVideo, error: updateError } = await supabase
-        .from('generated_videos')
-        .update({ 
-          video_url: videoUrl,
-          status: 'completed'
-        })
-        .eq('id', pendingVideo.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Failed to update video record:', updateError);
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, video: updatedVideo || { ...pendingVideo, video_url: videoUrl, status: 'completed' } }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // No video URL in response
+    // Unexpected response format
     await supabase
       .from('generated_videos')
       .update({ status: 'failed' })
       .eq('id', pendingVideo.id);
 
     return new Response(
-      JSON.stringify({ error: 'No video URL in response', details: veoResult }),
+      JSON.stringify({ error: 'Unexpected API response format', details: veoResult }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
