@@ -113,7 +113,7 @@ Ultra high resolution, photorealistic, commercial quality.`;
         "Content-Type": "application/json" 
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-image",
         messages: [
           { role: "user", content: basePrompt }
         ],
