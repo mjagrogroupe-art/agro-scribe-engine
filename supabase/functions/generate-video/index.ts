@@ -75,7 +75,7 @@ serve(async (req) => {
     const aspectRatio = ['tiktok', 'instagram_reels', 'facebook_reels', 'youtube_shorts'].includes(platform) ? '9:16' : '16:9';
 
     // Use the correct Gemini API endpoint for video generation
-    const MODEL_ID = 'veo-3.0-generate-preview';
+    const MODEL_ID = 'veo-2.0-generate-001';
     const veoResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateVideos?key=${GEMINI_API_KEY}`,
       {
@@ -93,7 +93,7 @@ serve(async (req) => {
 
     if (!veoResponse.ok) {
       const errorText = await veoResponse.text();
-      console.error('Veo API error:', veoResponse.status, errorText);
+      console.error('Veo API error:', veoResponse.status, 'URL:', `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateVideos`, 'Response:', errorText);
 
       await supabase
         .from('generated_videos')
@@ -114,7 +114,7 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ error: 'Video generation failed', details: errorText }),
+        JSON.stringify({ error: 'Video generation failed. Your Gemini API key may not have access to the Veo video generation API. Please enable the Veo API in your Google AI Studio billing settings.', details: errorText }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

@@ -4,16 +4,12 @@ import { ProjectCard } from '@/components/projects/ProjectCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProjects } from '@/hooks/useProjects';
-import { useAuth } from '@/hooks/useAuth';
-import { PROJECT_STATUSES } from '@/lib/constants';
-import { Plus, FolderOpen, Clock, CheckCircle, AlertTriangle, Package } from 'lucide-react';
+import { Plus, FolderOpen, Clock, AlertTriangle, Package } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Dashboard() {
-  const { profile } = useAuth();
   const { data: projects, isLoading } = useProjects();
 
-  // Calculate stats
   const stats = {
     total: projects?.length || 0,
     draft: projects?.filter((p) => p.status === 'draft').length || 0,
@@ -25,7 +21,7 @@ export default function Dashboard() {
   return (
     <AppLayout
       breadcrumbs={[{ label: 'Dashboard' }]}
-      title={`Welcome back, ${profile?.full_name || 'Operator'}`}
+      title="Welcome back, Operator"
     >
       <div className="space-y-6">
         {/* Stats Grid */}
@@ -51,7 +47,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-status-pending" />
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pending}</div>
@@ -60,7 +56,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Exported</CardTitle>
-              <Package className="h-4 w-4 text-status-exported" />
+              <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.exported}</div>
@@ -68,7 +64,6 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Recent Projects</h2>
           <Button asChild>
@@ -79,7 +74,6 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {/* Projects List */}
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
