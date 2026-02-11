@@ -332,6 +332,71 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          brand_id: string
+          compliance_flags: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          image_urls: string[] | null
+          is_active: boolean
+          metadata: Json | null
+          name: string
+          pack_size: string | null
+          pack_type: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          sku: string
+          updated_at: string
+          video_urls: string[] | null
+        }
+        Insert: {
+          brand_id: string
+          compliance_flags?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean
+          metadata?: Json | null
+          name: string
+          pack_size?: string | null
+          pack_type?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          sku: string
+          updated_at?: string
+          video_urls?: string[] | null
+        }
+        Update: {
+          brand_id?: string
+          compliance_flags?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean
+          metadata?: Json | null
+          name?: string
+          pack_size?: string | null
+          pack_type?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          sku?: string
+          updated_at?: string
+          video_urls?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           brand_id: string
@@ -453,6 +518,7 @@ export type Database = {
           id: string
           language: Database["public"]["Enums"]["language_code"]
           name: string
+          product_id: string | null
           product_sku: string | null
           status: Database["public"]["Enums"]["project_status"]
           suggested_duration: number | null
@@ -465,6 +531,7 @@ export type Database = {
           id?: string
           language?: Database["public"]["Enums"]["language_code"]
           name: string
+          product_id?: string | null
           product_sku?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           suggested_duration?: number | null
@@ -477,6 +544,7 @@ export type Database = {
           id?: string
           language?: Database["public"]["Enums"]["language_code"]
           name?: string
+          product_id?: string | null
           product_sku?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           suggested_duration?: number | null
@@ -495,6 +563,13 @@ export type Database = {
             columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]

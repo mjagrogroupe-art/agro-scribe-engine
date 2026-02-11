@@ -90,6 +90,7 @@ export function useCreateProject() {
         .insert({
           name: input.name,
           product_sku: input.product_sku || null,
+          product_id: input.product_id || null,
           language: input.language,
           brand_id: DEFAULT_BRAND_ID,
           created_by_profile_id: DEFAULT_PROFILE_ID,

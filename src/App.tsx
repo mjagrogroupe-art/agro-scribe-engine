@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import NewProject from "./pages/NewProject";
 import ProjectDetail from "./pages/ProjectDetail";
 import Settings from "./pages/Settings";
+import Products from "./pages/Products";
 import NotFound from "./pages/NotFound";
 import CampaignManager from "./pages/CampaignManager";
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/projects/new" element={<NewProject />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
+          <Route path="/products" element={<Products />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/campaigns" element={<CampaignManager />} />
           <Route path="*" element={<NotFound />} />
