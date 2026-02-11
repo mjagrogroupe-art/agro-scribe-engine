@@ -1,15 +1,17 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useProject } from '@/hooks/useProjects';
-import { useGeneratedHooks, useGeneratedScripts, useComplianceChecks } from '@/hooks/useGeneratedContent';
+import { useGeneratedHooks, useGeneratedScripts, useGeneratedCaptions, useComplianceChecks } from '@/hooks/useGeneratedContent';
+import { useProduct } from '@/hooks/useProducts';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { PlatformBadge } from '@/components/ui/platform-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { MARKETS, CONTENT_TYPES, LANGUAGES } from '@/lib/constants';
-import { Sparkles, FileText, Eye, MessageSquare, CheckCircle, Download, Loader2, Film, Video } from 'lucide-react';
+import { Sparkles, FileText, Eye, MessageSquare, CheckCircle, Download, Loader2, Film, Video, Package, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -17,6 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ImageGenerator } from '@/components/projects/ImageGenerator';
 import { StoryboardGenerator } from '@/components/projects/StoryboardGenerator';
 import VideoGenerator from '@/components/projects/VideoGenerator';
+import { ProductSummary } from '@/components/projects/ProductSelector';
 import { PlatformTarget } from '@/types/database';
 
 export default function ProjectDetail() {
@@ -24,21 +27,20 @@ export default function ProjectDetail() {
   const { data: project, isLoading } = useProject(id);
   const { data: hooks } = useGeneratedHooks(id);
   const { data: scripts } = useGeneratedScripts(id);
+  const { data: captions } = useGeneratedCaptions(id);
   const { data: compliance } = useComplianceChecks(id);
+  const { data: product } = useProduct(project?.product_id);
   const [generating, setGenerating] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const generateContent = async (type: 'hooks' | 'scripts' | 'captions') => {
     if (!project) return;
     setGenerating(type);
-    
     try {
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: { projectId: project.id, type }
       });
-
       if (error) throw error;
-
       queryClient.invalidateQueries({ queryKey: [type, id] });
       toast({ title: 'Content generated', description: `${type} have been created successfully.` });
     } catch (err: any) {
@@ -51,10 +53,7 @@ export default function ProjectDetail() {
   if (isLoading) {
     return (
       <AppLayout breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Loading...' }]}>
-        <div className="space-y-6">
-          <Skeleton className="h-8 w-1/3" />
-          <Skeleton className="h-64 w-full" />
-        </div>
+        <div className="space-y-6"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-64 w-full" /></div>
       </AppLayout>
     );
   }
@@ -68,9 +67,7 @@ export default function ProjectDetail() {
   }
 
   return (
-    <AppLayout
-      breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: project.name }]}
-    >
+    <AppLayout breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: project.name }]}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -90,6 +87,19 @@ export default function ProjectDetail() {
             )}
           </div>
         </div>
+
+        {/* Product Context Card */}
+        {product ? (
+          <ProductSummary product={product} />
+        ) : (
+          <div className="flex items-start gap-2 p-4 rounded-lg border border-accent/30 bg-accent/5 text-sm">
+            <AlertTriangle className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium">No product linked</p>
+              <p className="text-muted-foreground">AI will generate generic brand content. For SKU-accurate output, link a product from the catalog.</p>
+            </div>
+          </div>
+        )}
 
         {/* Project Info */}
         <div className="grid gap-4 md:grid-cols-3">
@@ -186,26 +196,56 @@ export default function ProjectDetail() {
           </TabsContent>
 
           <TabsContent value="storyboard">
-            <StoryboardGenerator 
-              projectId={project.id} 
-              scripts={scripts || []} 
-            />
+            <StoryboardGenerator projectId={project.id} scripts={scripts || []} />
           </TabsContent>
 
           <TabsContent value="visual">
-            <ImageGenerator 
-              projectId={project.id} 
-              platforms={project.platforms as PlatformTarget[]} 
-            />
-          </TabsContent>
-          <TabsContent value="video">
-            <VideoGenerator 
-              projectId={project.id} 
-              platforms={project.platforms as PlatformTarget[]} 
-            />
+            <ImageGenerator projectId={project.id} platforms={project.platforms as PlatformTarget[]} />
           </TabsContent>
 
-          <TabsContent value="captions"><Card><CardContent className="py-8 text-center text-muted-foreground">Generate captions after approving scripts.</CardContent></Card></TabsContent>
+          <TabsContent value="video">
+            <VideoGenerator projectId={project.id} platforms={project.platforms as PlatformTarget[]} />
+          </TabsContent>
+
+          <TabsContent value="captions" className="space-y-4">
+            <div className="flex justify-between">
+              <div><h3 className="font-medium">AI Caption Generator</h3><p className="text-sm text-muted-foreground">Platform-native captions with hashtags and SEO</p></div>
+              <Button onClick={() => generateContent('captions')} disabled={generating === 'captions'}>
+                {generating === 'captions' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
+                Generate Captions
+              </Button>
+            </div>
+            {captions && captions.length > 0 ? (
+              <div className="space-y-4">
+                {captions.map((caption) => (
+                  <Card key={caption.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-2">
+                        <PlatformBadge platform={caption.platform as any} />
+                        {caption.is_selected && <Badge className="bg-primary">Selected</Badge>}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <p className="text-sm">{caption.caption_text}</p>
+                      {caption.hashtags && caption.hashtags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {caption.hashtags.map((tag, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      {caption.seo_title && (
+                        <p className="text-xs text-muted-foreground"><strong>SEO:</strong> {caption.seo_title}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">Generate captions after reviewing scripts.</CardContent></Card>
+            )}
+          </TabsContent>
+
           <TabsContent value="compliance">
             <Card>
               <CardContent className="py-8">

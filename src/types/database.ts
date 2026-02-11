@@ -13,6 +13,25 @@ export interface Brand {
   created_at: string;
 }
 
+export interface Product {
+  id: string;
+  brand_id: string;
+  sku: string;
+  name: string;
+  description: string | null;
+  pack_type: string | null;
+  pack_size: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  compliance_flags: string[];
+  image_urls: string[];
+  video_urls: string[];
+  metadata: Record<string, any>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Profile {
   id: string;
   user_id: string;
@@ -28,6 +47,7 @@ export interface Project {
   created_by_profile_id: string;
   name: string;
   product_sku: string | null;
+  product_id: string | null;
   status: ProjectStatus;
   language: LanguageCode;
   suggested_duration: number | null;
@@ -41,6 +61,7 @@ export interface ProjectWithDetails extends Project {
   markets: MarketRegion[];
   brand?: Brand;
   created_by?: Profile;
+  product?: Product | null;
 }
 
 export interface ProjectPlatform {
@@ -154,6 +175,7 @@ export interface ApprovalHistory {
 export interface CreateProjectInput {
   name: string;
   product_sku?: string;
+  product_id?: string;
   language: LanguageCode;
   platforms: PlatformTarget[];
   content_types: ContentType[];

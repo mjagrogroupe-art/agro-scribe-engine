@@ -18,11 +18,13 @@ import {
   Settings,
   Leaf,
   Megaphone,
+  Package,
 } from 'lucide-react';
 
 const mainNavItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'New Project', url: '/projects/new', icon: FolderPlus },
+  { title: 'Products', url: '/products', icon: Package },
   { title: 'Campaigns', url: '/campaigns', icon: Megaphone },
 ];
 
