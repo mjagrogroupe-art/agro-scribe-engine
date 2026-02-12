@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { MARKETS, CONTENT_TYPES, LANGUAGES } from '@/lib/constants';
-import { Sparkles, FileText, Eye, MessageSquare, CheckCircle, Download, Loader2, Film, Video, Package, AlertTriangle } from 'lucide-react';
+import { Sparkles, FileText, Eye, MessageSquare, CheckCircle, Download, Loader2, Film, Video, Package, AlertTriangle, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -20,6 +20,7 @@ import { ImageGenerator } from '@/components/projects/ImageGenerator';
 import { StoryboardGenerator } from '@/components/projects/StoryboardGenerator';
 import VideoGenerator from '@/components/projects/VideoGenerator';
 import { ProductSummary } from '@/components/projects/ProductSelector';
+import { QAComplianceEngine } from '@/components/projects/QAComplianceEngine';
 import { PlatformTarget } from '@/types/database';
 
 export default function ProjectDetail() {
@@ -140,7 +141,7 @@ export default function ProjectDetail() {
             <TabsTrigger value="visual"><Eye className="mr-2 h-4 w-4" />Visual</TabsTrigger>
             <TabsTrigger value="video"><Video className="mr-2 h-4 w-4" />Video</TabsTrigger>
             <TabsTrigger value="captions"><MessageSquare className="mr-2 h-4 w-4" />Captions</TabsTrigger>
-            <TabsTrigger value="compliance"><CheckCircle className="mr-2 h-4 w-4" />QA</TabsTrigger>
+            <TabsTrigger value="compliance"><Shield className="mr-2 h-4 w-4" />QA</TabsTrigger>
           </TabsList>
 
           <TabsContent value="hooks" className="space-y-4">
@@ -247,22 +248,13 @@ export default function ProjectDetail() {
           </TabsContent>
 
           <TabsContent value="compliance">
-            <Card>
-              <CardContent className="py-8">
-                {compliance && compliance.length > 0 ? (
-                  <div className="space-y-2">
-                    {compliance.map((check) => (
-                      <div key={check.id} className="flex items-center gap-2">
-                        <CheckCircle className={`h-4 w-4 ${check.passed ? 'text-status-approved' : 'text-status-qa-failed'}`} />
-                        <span>{check.check_name}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground">QA checks will run before export.</p>
-                )}
-              </CardContent>
-            </Card>
+            <QAComplianceEngine
+              project={project}
+              product={product || null}
+              hooks={hooks || []}
+              scripts={scripts || []}
+              captions={captions || []}
+            />
           </TabsContent>
         </Tabs>
       </div>
