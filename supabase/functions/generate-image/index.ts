@@ -47,6 +47,45 @@ serve(async (req) => {
     const product = project.products;
     const contentTypes = project.project_content_types?.map((c: any) => c.content_type) || [];
 
+    // Fetch generated hooks and scripts for this project to inform image generation
+    const [hooksResult, scriptsResult] = await Promise.all([
+      supabase.from("generated_hooks").select("*").eq("project_id", projectId).order("created_at", { ascending: false }).limit(10),
+      supabase.from("generated_scripts").select("*").eq("project_id", projectId).order("created_at", { ascending: false }).limit(5),
+    ]);
+
+    const hooks = hooksResult.data || [];
+    const scripts = scriptsResult.data || [];
+
+    // Build hooks/scripts context block
+    let contentContextBlock = "";
+    if (hooks.length > 0) {
+      const selectedHook = hooks.find((h: any) => h.is_selected) || hooks[0];
+      contentContextBlock += `\nSELECTED HOOK (use as creative direction):
+- Type: ${selectedHook.hook_type}
+- Text: "${selectedHook.hook_text}"
+${selectedHook.retention_score ? `- Retention Score: ${selectedHook.retention_score}%` : ""}`;
+      
+      if (hooks.length > 1) {
+        contentContextBlock += `\nOTHER HOOKS AVAILABLE:`;
+        hooks.slice(0, 4).forEach((h: any) => {
+          if (h.id !== selectedHook.id) {
+            contentContextBlock += `\n- [${h.hook_type}] "${h.hook_text}"`;
+          }
+        });
+      }
+    }
+
+    if (scripts.length > 0) {
+      const selectedScript = scripts.find((s: any) => s.is_selected) || scripts[0];
+      contentContextBlock += `\n\nSELECTED SCRIPT (use for visual storytelling):
+- Platform: ${selectedScript.platform}
+- Duration: ${selectedScript.duration_seconds}s
+- Hook Section: "${selectedScript.hook_section}"
+- Value Delivery: "${selectedScript.value_delivery}"
+- Brand Anchor: "${selectedScript.brand_anchor}"
+- CTA: "${selectedScript.soft_cta}"`;
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "Service configuration error" }), { status: 500, headers: corsHeaders });
@@ -80,6 +119,7 @@ ${product.image_urls?.length ? `- Reference Images available: ${product.image_ur
     const basePrompt = customPrompt || `${STRICT_PRODUCT_RULES}
 
 ${productBlock}
+${contentContextBlock}
 
 Generate a premium product image for TAVAAZO (MJ Agro).
 Content style: ${contentTypes.join(", ") || "product showcase"}
@@ -93,6 +133,8 @@ Requirements:
 - No text overlays, pure visual content
 - Product must appear exactly as described — no design alterations
 - Sophisticated composition for ${platform.replace("_", " ")}
+${hooks.length > 0 ? "- Visual must align with the hook direction and messaging tone" : ""}
+${scripts.length > 0 ? "- Visual must support the script's storytelling flow" : ""}
 
 Ultra high resolution, photorealistic, commercial quality.`;
 

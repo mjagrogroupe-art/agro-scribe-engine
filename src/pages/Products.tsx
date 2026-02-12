@@ -22,9 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useProducts, useCreateProduct, useDeleteProduct, CreateProductInput } from '@/hooks/useProducts';
+import { useProducts, useCreateProduct, useDeleteProduct, useUpdateProduct, CreateProductInput } from '@/hooks/useProducts';
 import { Product } from '@/types/database';
 import { Plus, Package, Trash2, Image, Video, Loader2, AlertTriangle } from 'lucide-react';
+import { ProductImageUploader } from '@/components/products/ProductImageUploader';
 
 const PACK_TYPES = ['Box', 'Pouch', 'Jar', 'Bag', 'Can', 'Tray', 'Gift Set'];
 const COMPLIANCE_OPTIONS = ['Organic', 'Halal', 'Kosher', 'LMIV', 'Vegan', 'Gluten-Free', 'Non-GMO'];
@@ -229,23 +230,10 @@ export default function Products() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Product Image URLs</Label>
-                  <div className="flex gap-2">
-                    <Input placeholder="https://..." value={imageUrlInput} onChange={e => setImageUrlInput(e.target.value)} />
-                    <Button type="button" variant="outline" size="sm" onClick={addImageUrl}>Add</Button>
-                  </div>
-                  {form.image_urls && form.image_urls.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {form.image_urls.map((url, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          Image {i + 1}
-                          <button className="ml-1" onClick={() => setForm(p => ({ ...p, image_urls: p.image_urls?.filter((_, idx) => idx !== i) }))}>×</button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <ProductImageUploader
+                  imageUrls={form.image_urls || []}
+                  onChange={(urls) => setForm(prev => ({ ...prev, image_urls: urls }))}
+                />
 
                 <div className="space-y-2">
                   <Label>Product Video URLs</Label>
